@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LUMINEX — Dashboard</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#05070D;
+  --surface:#080E1A;
+  --surface2:#0C1422;
+  --blue:#3B82F6;
+  --cyan:#22D3EE;
+  --text:#E2E8F0;
+  --muted:#4A5568;
+  --dim:#1E2A3A;
+  --border:rgba(255,255,255,0.06);
+  --border2:rgba(59,130,246,0.12);
+}
+html,body{height:100%;overflow:hidden}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Outfit',sans-serif;
+  font-weight:300;
+  -webkit-font-smoothing:antialiased;
+  display:flex;
+}
+
+/* ─── CANVAS ─── */
+#universe{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.6}
+
+/* ─── SIDEBAR ─── */
+.sidebar{
+  width:240px;flex-shrink:0;
+  background:rgba(5,7,13,0.92);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  height:100vh;
+  z-index:50;
+  position:relative;
+  backdrop-filter:blur(24px);
+}
+.sidebar-logo{
+  padding:24px 20px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;
+}
+.logo-icon{
+  width:34px;height:34px;
+  background:linear-gradient(135deg,#0d1829,#1a2f4e);
+  border-radius:9px;
+  border:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  box-shadow:inset 0 0 10px rgba(59,130,246,0.1);
+}
+.logo-icon svg{animation:logoPulse 3s ease-in-out infinite}
+@keyframes logoPulse{0%,100%{opacity:.75}50%{opacity:1}}
+.logo-text{
+  font-family:'JetBrains Mono',monospace;
+  font-size:13px;letter-spacing:4px;color:var(--text);font-weight:400;
+}
+.logo-ver{
+  font-family:'JetBrains Mono',monospace;
+  font-size:8px;letter-spacing:2px;color:rgba(59,130,246,0.4);margin-top:2px;
+}
+
+.sidebar-nav{
+  flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:4px;
+  overflow-y:auto;
+}
+.nav-item{
+  display:flex;align-items:center;gap:12px;
+  padding:11px 14px;border-radius:10px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);cursor:pointer;
+  border:1px solid transparent;
+  transition:all .25s cubic-bezier(.23,1,.32,1);
+}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,0.03)}
+.nav-item.active{
+  color:var(--blue);
+  background:rgba(59,130,246,0.07);
+  border-color:var(--border2);
+}
+.nav-item .nav-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:currentColor;opacity:0.5;flex-shrink:0;
+  transition:all .25s;
+}
+.nav-item.active .nav-dot{opacity:1;box-shadow:0 0 6px currentColor}
+
+.sidebar-footer{
+  padding:16px 12px;border-top:1px solid var(--border);
+}
+.sidebar-meta{
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;letter-spacing:1px;color:#1E2D40;
+  display:flex;flex-direction:column;gap:4px;
+}
+.sidebar-user{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;border-radius:10px;
+  background:rgba(255,255,255,0.02);
+  border:1px solid var(--border);
+  margin-bottom:10px;
+}
+.user-avatar{
+  width:28px;height:28px;border-radius:8px;
+  background:linear-gradient(135deg,var(--blue),var(--cyan));
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;
+  color:white;flex-shrink:0;
+}
+.user-name{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--text)}
+.user-role{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:1px;color:var(--muted);margin-top:1px}
+.logout-btn{
+  margin-left:auto;cursor:pointer;padding:4px;
+  color:var(--muted);transition:color .2s;
+}
+.logout-btn:hover{color:#ef4444}
+
+/* ─── MAIN ─── */
+.main{
+  flex:1;display:flex;flex-direction:column;
+  height:100vh;overflow:hidden;position:relative;z-index:10;
+}
+
+/* ─── TOPBAR ─── */
+.topbar{
+  height:60px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;
+  border-bottom:1px solid var(--border);
+  background:rgba(5,7,13,0.7);
+  backdrop-filter:blur(20px);
+}
+.topbar-tabs{display:flex;gap:4px}
+.top-tab{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;letter-spacing:2px;text-transform:uppercase;
+  padding:6px 16px;border-radius:8px;
+  color:var(--muted);cursor:pointer;
+  border:1px solid transparent;
+  transition:all .2s;
+}
+.top-tab:hover{color:var(--text)}
+.top-tab.active{
+  color:var(--blue);
+  background:rgba(59,130,246,0.07);
+  border-color:var(--border2);
+}
+.topbar-right{
+  display:flex;align-items:center;gap:16px;
+}
+.live-clock{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;letter-spacing:1px;color:#1E2D40;
+}
+
+/* ─── CONTENT ─── */
+.content{
+  flex:1;overflow-y:auto;padding:28px;
+}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#1E2A3A;border-radius:2px}
+
+/* ─── VIEWS ─── */
+.view{display:none}
+.view.active{display:block;animation:viewIn .4s cubic-bezier(.23,1,.32,1)}
+@keyframes viewIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─── GRID LAYOUTS ─── */
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.grid-1{display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:20px}
+
+/* ─── CARDS ─── */
+.card{
+  background:rgba(8,14,26,0.8);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:24px;
+  position:relative;overflow:hidden;
+  transition:border-color .3s;
+}
+.card:hover{border-color:rgba(59,130,246,0.15)}
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(to right,transparent,rgba(59,130,246,0.2),transparent);
+  opacity:0;transition:opacity .3s;
+}
+.card:hover::before{opacity:1}
+
+.card-label{
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:12px;display:block;
+}
+.card-value{
+  font-size:36px;font-weight:700;letter-spacing:-1px;
+  color:var(--text);line-height:1;margin-bottom:6px;
+}
+.card-value.blue{color:var(--blue)}
+.card-value.cyan{color:var(--cyan)}
+.card-sub{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;letter-spacing:1px;color:var(--muted);
+}
+.card-title{font-size:17px;font-weight:500;color:var(--text);margin-bottom:8px}
+.card-desc{font-size:13px;color:var(--muted);line-height:1.6}
+
+/* status pills */
+.pill{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;letter-spacing:2px;text-transform:uppercase;
+  padding:5px 12px;border-radius:100px;
+}
+.pill-blue{background:rgba(59,130,246,0.1);color:var(--blue);border:1px solid rgba(59,130,246,0.2)}
+.pill-cyan{background:rgba(34,211,238,0.08);color:var(--cyan);border:1px solid rgba(34,211,238,0.15)}
+.pill-dim{background:rgba(255,255,255,0.03);color:var(--muted);border:1px solid var(--border)}
+.pill-green{background:rgba(34,197,94,0.08);color:#4ade80;border:1px solid rgba(34,197,94,0.2)}
+.pill::before{content:'';width:4px;height:4px;border-radius:50%;background:currentColor}
+
+/* section label */
+.section-label{
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--blue);margin-bottom:14px;display:block;
+}
+.section-title{font-size:20px;font-weight:600;color:var(--text);margin-bottom:20px}
+
+/* divider */
+.divider{height:1px;background:var(--border);margin:20px 0}
+
+/* info rows */
+.info-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 0;border-bottom:1px solid var(--border);
+  font-size:13px;
+}
+.info-row:last-child{border-bottom:none}
+.info-key{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--muted)}
+.info-val{color:var(--text);font-weight:400}
+
+/* asset card */
+.asset-card{
+  background:rgba(8,14,26,0.8);
+  border:1px solid var(--border);
+  border-radius:16px;padding:28px;
+  display:flex;align-items:flex-start;gap:20px;
+  transition:all .3s;cursor:pointer;
+  position:relative;overflow:hidden;
+}
+.asset-card:hover{border-color:rgba(59,130,246,0.2);transform:translateY(-2px)}
+.asset-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(to right,transparent,rgba(59,130,246,0.3),transparent);
+  opacity:0;transition:opacity .3s;
+}
+.asset-card:hover::before{opacity:1}
+.asset-num{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;letter-spacing:2px;color:var(--muted);
+  flex-shrink:0;padding-top:2px;
+}
+.asset-icon{
+  width:48px;height:48px;border-radius:12px;
+  border:1px solid var(--border2);
+  background:linear-gradient(135deg,#0d1829,#1a2f4e);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.asset-body{flex:1}
+.asset-title{font-size:17px;font-weight:600;color:var(--text);margin-bottom:6px}
+.asset-desc{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:14px}
+.asset-placeholder{
+  border:1px dashed rgba(255,255,255,0.06);
+  border-radius:16px;padding:32px 28px;
+  display:flex;align-items:center;gap:20px;
+  opacity:0.5;
+}
+.asset-ph-icon{
+  width:48px;height:48px;border-radius:12px;
+  border:1px dashed var(--border);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;color:var(--muted);font-size:20px;
+}
+
+/* progress bar */
+.prog-wrap{margin-top:12px}
+.prog-label{display:flex;justify-content:space-between;margin-bottom:6px}
+.prog-label span{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--muted)}
+.prog-bar{height:2px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;border-radius:2px;background:linear-gradient(to right,var(--blue),var(--cyan));transition:width 1.4s cubic-bezier(.34,1.56,.64,1)}
+
+/* capital zero */
+.capital-zero{
+  text-align:center;padding:60px 0;
+}
+.capital-zero-num{
+  font-size:80px;font-weight:700;letter-spacing:-4px;
+  background:linear-gradient(135deg,var(--text) 0%,var(--muted) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  line-height:1;margin-bottom:12px;
+}
+.capital-zero-label{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;letter-spacing:3px;color:var(--muted);
+  text-transform:uppercase;margin-bottom:24px;
+}
+.capital-zero-note{
+  font-size:14px;color:var(--muted);max-width:380px;
+  margin:0 auto;line-height:1.7;
+}
+
+/* timeline */
+.timeline{display:flex;flex-direction:column;gap:0}
+.tl-item{
+  display:flex;gap:20px;padding:20px 0;
+  border-bottom:1px solid var(--border);
+  position:relative;
+}
+.tl-item:last-child{border-bottom:none}
+.tl-left{
+  flex-shrink:0;width:80px;
+  font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--muted);
+  padding-top:2px;
+}
+.tl-dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;
+}
+.tl-dot.done{background:var(--blue);box-shadow:0 0 8px var(--blue)}
+.tl-dot.active{background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:dotPulse 2s ease-in-out infinite}
+.tl-dot.pending{background:transparent;border:1px solid var(--border)}
+@keyframes dotPulse{0%,100%{box-shadow:0 0 4px var(--cyan)}50%{box-shadow:0 0 12px var(--cyan)}}
+.tl-body{flex:1}
+.tl-title{font-size:14px;font-weight:500;color:var(--text);margin-bottom:4px}
+.tl-desc{font-size:12px;color:var(--muted);line-height:1.6}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:900px){
+  .sidebar{display:none}
+  .grid-3{grid-template-columns:1fr}
+  .grid-2{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .content{padding:16px}
+  .topbar{padding:0 16px}
+}
+</style>
+</head>
+<body>
+
+<script>
+(async function(){
+  try{
+    const r = await fetch('/api/auth');
+    const d = await r.json();
+    if(!d.authenticated) window.location.replace('/login');
+  } catch(e) { window.location.replace('/login'); }
+})();
+</script>
+<script>
+// Telegram WebApp init
+if (window.Telegram?.WebApp) {
+  Telegram.WebApp.ready();
+  Telegram.WebApp.expand();
+  Telegram.WebApp.setHeaderColor('#05070D');
+  Telegram.WebApp.setBackgroundColor('#05070D');
+}
+// Auth guard
+(async function(){
+  try{
+    const r=await fetch('/api/auth');
+    const d=await r.json();
+    if(!d.authenticated) window.location.replace('/login');
+  }catch(e){ window.location.replace('/login'); }
+})();
+</script>
+<canvas id="universe"></canvas>
+
+<!-- ═══ SIDEBAR ═══ -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <line x1="2" y1="2" x2="16" y2="16" stroke="url(#sg1)" stroke-width="2" stroke-linecap="round"/>
+        <line x1="16" y1="2" x2="2" y2="16" stroke="url(#sg2)" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="9" cy="9" r="2" fill="white" opacity="0.9"/>
+        <defs>
+          <linearGradient id="sg1" x1="2" y1="2" x2="16" y2="16"><stop stop-color="#3B82F6"/><stop offset="1" stop-color="#22D3EE"/></linearGradient>
+          <linearGradient id="sg2" x1="16" y1="2" x2="2" y2="16"><stop stop-color="#22D3EE"/><stop offset="1" stop-color="#3B82F6"/></linearGradient>
+        </defs>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-text">LUMINEX</div>
+      <div class="logo-ver">SYSTEM v1.0</div>
+    </div>
+  </div>
+
+  <div class="sidebar-nav">
+    <div class="nav-item active" id="snav-0" onclick="switchView(0)">
+      <div class="nav-dot"></div>Overview
+    </div>
+    <div class="nav-item" id="snav-1" onclick="switchView(1)">
+      <div class="nav-dot"></div>Assets
+    </div>
+    <div class="nav-item" id="snav-2" onclick="switchView(2)">
+      <div class="nav-dot"></div>Capital
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="user-avatar" id="user-avatar">L</div>
+      <div>
+        <div class="user-name" id="user-name">—</div>
+        <div class="user-role" id="user-role">member</div>
+      </div>
+      <div class="logout-btn" onclick="handleLogout()" title="Выйти">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 1H12a1 1 0 011 1v10a1 1 0 01-1 1H9M6 10l3-3-3-3M9 7H1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+    <div class="sidebar-meta">
+      <span id="live-date">—</span>
+      <span id="live-time">—</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MAIN ═══ -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-tabs">
+      <div class="top-tab active" id="ttab-0" onclick="switchView(0)">Overview</div>
+      <div class="top-tab" id="ttab-1" onclick="switchView(1)">Assets</div>
+      <div class="top-tab" id="ttab-2" onclick="switchView(2)">Capital</div>
+    </div>
+    <div class="topbar-right">
+      <span class="live-clock" id="top-date">—</span>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ═══ VIEW 0: OVERVIEW ═══ -->
+    <div class="view active" id="view-0">
+
+      <!-- KPI row -->
+      <div class="grid-3">
+        <div class="card">
+          <span class="card-label">Total Capital</span>
+          <div class="card-value">0<span style="font-size:20px;font-weight:400;color:var(--muted)">€</span></div>
+          <div class="card-sub">Начало · Q1 2026</div>
+          <!-- mini spark chart placeholder -->
+          <div style="margin-top:16px;height:36px;display:flex;align-items:flex-end;gap:3px" id="capital-spark">
+            <div style="flex:1;height:8%;background:rgba(59,130,246,0.15);border-radius:2px 2px 0 0"></div>
+            <div style="flex:1;height:8%;background:rgba(59,130,246,0.15);border-radius:2px 2px 0 0"></div>
+            <div style="flex:1;height:8%;background:rgba(59,130,246,0.15);border-radius:2px 2px 0 0"></div>
+            <div style="flex:1;height:8%;background:rgba(59,130,246,0.15);border-radius:2px 2px 0 0"></div>
+            <div style="flex:1;height:20%;background:rgba(59,130,246,0.25);border-radius:2px 2px 0 0"></div>
+            <div style="flex:1;height:35%;background:rgba(59,130,246,0.35);border-radius:2px 2px 0 0"></div>
+            <div style="flex:1;height:100%;background:linear-gradient(to top,var(--blue),var(--cyan));border-radius:2px 2px 0 0;box-shadow:0 0 8px rgba(59,130,246,0.4)"></div>
+          </div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:1px;color:#1E2A3A;margin-top:6px">Рост капитала · начало пути</div>
+        </div>
+
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="padding:20px 24px 16px">
+            <span class="card-label" style="margin-bottom:8px">Active Asset</span>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+              <div style="width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#0d1829,#1a2f4e);border:1px solid rgba(59,130,246,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><line x1="2" y1="2" x2="14" y2="14" stroke="url(#asg1)" stroke-width="1.8" stroke-linecap="round"/><line x1="14" y1="2" x2="2" y2="14" stroke="url(#asg2)" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="8" r="1.8" fill="white" opacity="0.9"/><defs><linearGradient id="asg1" x1="2" y1="2" x2="14" y2="14"><stop stop-color="#3B82F6"/><stop offset="1" stop-color="#22D3EE"/></linearGradient><linearGradient id="asg2" x1="14" y1="2" x2="2" y2="14"><stop stop-color="#22D3EE"/><stop offset="1" stop-color="#3B82F6"/></linearGradient></defs></svg>
+              </div>
+              <div>
+                <div style="font-size:15px;font-weight:600;color:var(--text)">Telegram Marketplace</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--cyan);margin-top:2px">TAVERNA</div>
+              </div>
+            </div>
+          </div>
+          <div style="border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border)">
+            <div style="padding:12px 24px;border-right:1px solid var(--border)">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:4px">АУДИТОРИЯ</div>
+              <div style="font-size:18px;font-weight:600;color:var(--text)">2.2к</div>
+            </div>
+            <div style="padding:12px 24px">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:4px">ОХВАТ</div>
+              <div style="font-size:18px;font-weight:600;color:var(--blue)">210 👁</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr">
+            <div style="padding:12px 24px;border-right:1px solid var(--border)">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:4px">ПОСТОВ</div>
+              <div style="font-size:18px;font-weight:600;color:var(--text)">55.2к</div>
+            </div>
+            <div style="padding:12px 24px">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:4px">ЗАРАБОТАНО</div>
+              <div style="font-size:18px;font-weight:600;color:var(--cyan)">50€</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <span class="card-label">System Status</span>
+          <div style="margin-top:8px"><span class="pill pill-cyan">Operational</span></div>
+          <div class="divider" style="margin:16px 0"></div>
+          <div class="info-row" style="padding:8px 0">
+            <span class="info-key">Активных активов</span>
+            <span class="info-val">1</span>
+          </div>
+          <div class="info-row" style="padding:8px 0">
+            <span class="info-key">Следующий актив</span>
+            <span class="info-val">Q3 2026</span>
+          </div>
+          <div class="info-row" style="padding:8px 0;border-bottom:none">
+            <span class="info-key">Фаза</span>
+            <span class="info-val" style="color:var(--blue)">Build</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- About + Principle -->
+      <div class="grid-2">
+        <div class="card">
+          <span class="card-label">About Luminex</span>
+          <div class="card-title">Система, которая создаёт системы</div>
+          <div class="card-desc">Luminex — инфраструктура для системного развития проектов. Берём идею, доводим до рабочего состояния, запускаем. Доход реинвестируется в следующий актив.</div>
+          <div class="divider"></div>
+          <div class="info-row">
+            <span class="info-key">Основан</span>
+            <span class="info-val">2026</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Первый актив</span>
+            <span class="info-val">Taverna, 2023</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Текущий цикл</span>
+            <span class="info-val">Цикл I — Build</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">В планах</span>
+            <span class="info-val">Asset №2 — Q3 2026</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <span class="card-label">The Principle</span>
+          <div class="card-title">Build → Scale → Repeat</div>
+          <div class="timeline">
+            <div class="tl-item">
+              <div class="tl-left">Build</div>
+              <div class="tl-dot done"></div>
+              <div class="tl-body">
+                <div class="tl-title">Отбор и запуск</div>
+                <div class="tl-desc">Выявляем проект с потенциалом. Выстраиваем операционную основу и выводим на рынок.</div>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-left">Scale</div>
+              <div class="tl-dot active"></div>
+              <div class="tl-body">
+                <div class="tl-title">Масштабирование</div>
+                <div class="tl-desc">Доводим до устойчивой монетизации. Каждый процесс оптимизируется под рост.</div>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-left">Repeat</div>
+              <div class="tl-dot pending"></div>
+              <div class="tl-body">
+                <div class="tl-title">Реинвестиция</div>
+                <div class="tl-desc">Сгенерированный капитал питает следующий актив. Цикл замкнут и самовоспроизводится.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /view-0 -->
+
+    <!-- ═══ VIEW 1: ASSETS ═══ -->
+    <div class="view" id="view-1">
+
+      <!-- Header + badge -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px">
+        <div>
+          <span class="section-label">Portfolio · Asset №1</span>
+          <div style="font-size:26px;font-weight:700;letter-spacing:-0.5px;color:var(--text)">Taverna</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--muted);margin-top:4px">Telegram Marketplace · Запущен Dec 2023 · Под управлением Luminex с Mar 2026</div>
+        </div>
+        <span class="pill pill-cyan" style="margin-top:4px">Active · Build Phase</span>
+      </div>
+
+      <!-- KPI 4-col -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        <div class="card" style="padding:18px 20px">
+          <span class="card-label" style="margin-bottom:8px">Аудитория</span>
+          <div style="font-size:28px;font-weight:700;letter-spacing:-1px;color:var(--text);line-height:1">2 200</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);margin-top:6px">участников</div>
+        </div>
+        <div class="card" style="padding:18px 20px">
+          <span class="card-label" style="margin-bottom:8px">Охват / пост</span>
+          <div style="font-size:28px;font-weight:700;letter-spacing:-1px;color:var(--blue);line-height:1">210</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);margin-top:6px">просмотров · 9.5%</div>
+        </div>
+        <div class="card" style="padding:18px 20px">
+          <span class="card-label" style="margin-bottom:8px">Постов всего</span>
+          <div style="font-size:28px;font-weight:700;letter-spacing:-1px;color:var(--text);line-height:1">55.2к</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);margin-top:6px">с момента запуска</div>
+        </div>
+        <div class="card" style="padding:18px 20px">
+          <span class="card-label" style="margin-bottom:8px">Выручка / мес</span>
+          <div style="font-size:28px;font-weight:700;letter-spacing:-1px;color:var(--cyan);line-height:1">50€</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);margin-top:6px">рекламные размещения</div>
+        </div>
+      </div>
+
+      <!-- Chart + Timeline -->
+      <div class="grid-2" style="margin-bottom:20px">
+
+        <!-- Audience growth chart -->
+        <div class="card">
+          <span class="card-label">Рост аудитории</span>
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">
+            <div style="font-size:22px;font-weight:700;color:var(--text)">2 200</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:#4ade80;letter-spacing:1px">+1900% с запуска</div>
+          </div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:16px">Dec 2023 → Mar 2026 · Органический рост</div>
+          <div style="position:relative;height:100px">
+            <canvas id="audienceChart"></canvas>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:8px">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--muted)">Dec'23</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--muted)">Jun'24</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--muted)">Dec'24</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--muted)">Jun'25</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--muted)">Mar'26</span>
+          </div>
+        </div>
+
+        <!-- Revenue chart -->
+        <div class="card">
+          <span class="card-label">Динамика выручки</span>
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">
+            <div style="font-size:22px;font-weight:700;color:var(--cyan)">50€</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px">/ месяц · под Luminex</div>
+          </div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:16px">Mar 2026 — первая монетизация</div>
+          <div style="position:relative;height:100px">
+            <canvas id="revenueChart"></canvas>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:8px">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--muted)">Янв</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--muted)">Фев</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--muted)">Мар</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--cyan);font-weight:500">Сейчас</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Engagement + Timeline -->
+      <div class="grid-2" style="margin-bottom:20px">
+
+        <!-- Engagement metrics -->
+        <div class="card">
+          <span class="card-label">Вовлечённость и охват</span>
+          <div style="display:flex;flex-direction:column;gap:16px;margin-top:8px">
+
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <span style="font-size:13px;color:var(--text)">Охват аудитории</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blue);font-weight:500">9.5%</span>
+              </div>
+              <div class="prog-bar"><div class="prog-fill" style="width:0" data-w="9.5%"></div></div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);margin-top:5px">210 просмотров на 2 200 участников</div>
+            </div>
+
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <span style="font-size:13px;color:var(--text)">Монетизация</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--cyan);font-weight:500">10%</span>
+              </div>
+              <div class="prog-bar"><div class="prog-fill" style="width:0" data-w="10%"></div></div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);margin-top:5px">50€ из цели 500€/мес</div>
+            </div>
+
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <span style="font-size:13px;color:var(--text)">Фаза масштабирования</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);font-weight:500">35%</span>
+              </div>
+              <div class="prog-bar"><div class="prog-fill" style="width:0" data-w="35%"></div></div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);margin-top:5px">Build Phase → Scale</div>
+            </div>
+
+            <div style="border-top:1px solid var(--border);padding-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:4px">ПОСТОВ / ДЕНЬ</div>
+                <div style="font-size:18px;font-weight:600;color:var(--text)">~25</div>
+              </div>
+              <div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:4px">ВСЕГО ЗАРАБОТАНО</div>
+                <div style="font-size:18px;font-weight:600;color:var(--cyan)">50€</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Project timeline -->
+        <div class="card">
+          <span class="card-label">История проекта</span>
+          <div class="timeline" style="margin-top:4px">
+            <div class="tl-item">
+              <div class="tl-left">Dec 2023</div>
+              <div class="tl-dot done"></div>
+              <div class="tl-body">
+                <div class="tl-title">Запуск Taverna</div>
+                <div class="tl-desc">Telegram-сообщество открыто. Первые участники, органический трафик. Концепция цифровой барахолки.</div>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-left">2024</div>
+              <div class="tl-dot done"></div>
+              <div class="tl-body">
+                <div class="tl-title">Органический рост</div>
+                <div class="tl-desc">Аудитория выросла до 2 000+. Сформировалась активная база и паттерны публикаций.</div>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-left">Mar 2026</div>
+              <div class="tl-dot active"></div>
+              <div class="tl-body">
+                <div class="tl-title">Переход под Luminex</div>
+                <div class="tl-desc">Taverna становится Asset №1. Первая монетизация — 50€/мес. Начало системного масштабирования.</div>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-left">Q2 2026</div>
+              <div class="tl-dot pending"></div>
+              <div class="tl-body">
+                <div class="tl-title">Цель — 500€/мес</div>
+                <div class="tl-desc">Расширение рекламной модели, новые форматы монетизации, рост аудитории до 5 000.</div>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-left">Q3 2026</div>
+              <div class="tl-dot pending"></div>
+              <div class="tl-body">
+                <div class="tl-title">Реинвестиция → Asset №2</div>
+                <div class="tl-desc">Прибыль Taverna направляется в следующий проект Luminex.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Asset 2 placeholder -->
+      <div class="asset-placeholder">
+        <div class="asset-ph-icon">+</div>
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Asset №2</div>
+          <div style="font-size:15px;color:var(--muted);line-height:1.6">Следующий актив будет определён после выхода Taverna на целевые показатели. Финансирование — из реинвестированной прибыли.</div>
+          <div style="margin-top:12px"><span class="pill pill-dim">Q3 2026 — В планах</span></div>
+        </div>
+      </div>
+
+    </div><!-- /view-1 -->
+
+    <!-- ═══ VIEW 2: CAPITAL ═══ -->
+    <div class="view" id="view-2">
+
+      <span class="section-label">Financial</span>
+      <div class="section-title">Капитал Luminex</div>
+
+      <!-- Zero state -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="capital-zero">
+          <div class="capital-zero-num">0<span style="font-size:40px">€</span></div>
+          <div class="capital-zero-label">Total Capital · Q1 2026</div>
+          <div class="capital-zero-note">Luminex запускается с нулевого баланса. Капитал формируется по мере выхода активов на монетизацию.</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <span class="card-label">Capital Flow</span>
+          <div class="card-title">Движение капитала</div>
+          <div class="timeline">
+            <div class="tl-item">
+              <div class="tl-left">Mar 2026</div>
+              <div class="tl-dot done"></div>
+              <div class="tl-body">
+                <div class="tl-title">Первая выручка</div>
+                <div class="tl-desc">Taverna генерирует первый доход от рекламных размещений. Средства направляются обратно в развитие актива.</div>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-left">Q2 2026</div>
+              <div class="tl-dot active"></div>
+              <div class="tl-body">
+                <div class="tl-title">Масштабирование Taverna</div>
+                <div class="tl-desc">Рост аудитории, расширение рекламных интеграций, развитие сообщества. Фокус — на качестве актива, не на цифрах.</div>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-left">Q3 2026</div>
+              <div class="tl-dot pending"></div>
+              <div class="tl-body">
+                <div class="tl-title">Реинвестиция → Asset №2</div>
+                <div class="tl-desc">После достижения операционной зрелости Taverna — капитал направляется в следующий проект Luminex.</div>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-left">Q4+</div>
+              <div class="tl-dot pending"></div>
+              <div class="tl-body">
+                <div class="tl-title">Цикл замкнут</div>
+                <div class="tl-desc">Два актива работают параллельно. Система самовоспроизводится с каждым циклом.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <span class="card-label">Capital State</span>
+          <div class="card-title">Состояние капитала</div>
+
+          <div style="text-align:center;padding:28px 0 24px">
+            <div style="font-size:60px;font-weight:700;letter-spacing:-3px;background:linear-gradient(135deg,var(--text) 0%,var(--muted) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;margin-bottom:8px">0<span style="font-size:30px">€</span></div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:16px">Total Capital · Q1 2026</div>
+            <div style="font-size:13px;color:var(--muted);max-width:260px;margin:0 auto;line-height:1.7">Luminex стартует с нулевого баланса. Капитал накапливается по мере роста активов.</div>
+          </div>
+
+          <div class="divider" style="margin:0 0 16px"></div>
+
+          <div class="info-row">
+            <span class="info-key">Taverna · выручка / мес</span>
+            <span class="info-val" style="color:var(--cyan)">50€</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Направление средств</span>
+            <span class="info-val">Реинвестиция в Taverna</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Накоплено в Luminex</span>
+            <span class="info-val" style="color:var(--muted)">0€ · старт</span>
+          </div>
+          <div class="info-row" style="border-bottom:none">
+            <span class="info-key">Следующая точка</span>
+            <span class="info-val" style="color:var(--blue)">Q3 2026 · Asset №2</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /view-2 -->
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+// ─── CANVAS ───
+(function(){
+  const cv=document.getElementById('universe'),cx=cv.getContext('2d');
+  let W,H,pts=[];
+  function resize(){W=cv.width=innerWidth;H=cv.height=innerHeight}
+  addEventListener('resize',resize);resize();
+  function Pt(){this.x=Math.random()*W;this.y=Math.random()*H;this.vx=(Math.random()-.5)*.15;this.vy=(Math.random()-.5)*.15;this.r=Math.random()*.8+.2;this.o=Math.random()*.25+.05}
+  Pt.prototype.update=function(){this.x+=this.vx;this.y+=this.vy;if(this.x<0||this.x>W)this.vx*=-1;if(this.y<0||this.y>H)this.vy*=-1};
+  for(let i=0;i<55;i++)pts.push(new Pt());
+  (function loop(){
+    cx.clearRect(0,0,W,H);
+    for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<130){cx.strokeStyle=`rgba(59,130,246,${(1-d/130)*.08})`;cx.lineWidth=.5;cx.beginPath();cx.moveTo(pts[i].x,pts[i].y);cx.lineTo(pts[j].x,pts[j].y);cx.stroke()}}
+    pts.forEach(p=>{p.update();cx.fillStyle=`rgba(59,130,246,${p.o})`;cx.beginPath();cx.arc(p.x,p.y,p.r,0,Math.PI*2);cx.fill()});
+    requestAnimationFrame(loop);
+  })();
+})();
+
+// ─── SWITCH VIEW ───
+let cur=0;
+const TABS=['overview','assets','capital'];
+function switchView(n){
+  if(n===cur)return;
+  document.getElementById('view-'+cur).classList.remove('active');
+  document.getElementById('snav-'+cur).classList.remove('active');
+  document.getElementById('ttab-'+cur).classList.remove('active');
+  cur=n;
+  const el=document.getElementById('view-'+n);
+  el.classList.add('active');
+  document.getElementById('snav-'+n).classList.add('active');
+  document.getElementById('ttab-'+n).classList.add('active');
+  setTimeout(()=>animateProgs(el),80);
+}
+
+// ─── PROGRESS BARS ───
+function animateProgs(container){
+  container.querySelectorAll('.prog-fill[data-w]').forEach(el=>{el.style.width=el.dataset.w});
+}
+setTimeout(()=>animateProgs(document.getElementById('view-0')),300);
+
+// ─── CLOCK ───
+function updateClock(){
+  const now=new Date();
+  const d=now.toLocaleDateString('ru-RU',{weekday:'short',day:'numeric',month:'short'});
+  const t=now.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('live-date').textContent=d;
+  document.getElementById('live-time').textContent=t;
+  document.getElementById('top-date').textContent=d+' · '+t;
+}
+updateClock();setInterval(updateClock,10000);
+
+// ─── AUTH ───
+(async function(){
+  try{
+    const res=await fetch('/api/auth');
+    const data=await res.json();
+    if(data.authenticated&&data.user){
+      const name=data.user.name||data.user.username||'User';
+      document.getElementById('user-name').textContent=name.toUpperCase();
+      document.getElementById('user-role').textContent=data.user.role||'member';
+      document.getElementById('user-avatar').textContent=name[0].toUpperCase();
+    }
+  }catch(e){}
+})();
+
+// ─── CHARTS (Assets view) ───
+function initCharts() {
+  const chartOpts = {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{
+      backgroundColor:'rgba(8,14,26,0.95)',
+      borderColor:'rgba(59,130,246,0.2)',borderWidth:1,
+      titleColor:'#E2E8F0',bodyColor:'#4A5568',
+      titleFont:{family:'JetBrains Mono',size:10},
+      bodyFont:{family:'JetBrains Mono',size:10},
+      padding:10,cornerRadius:8,
+    }},
+    scales:{
+      x:{display:false},
+      y:{display:false}
+    }
+  };
+
+  // Audience growth
+  const actx = document.getElementById('audienceChart');
+  if(actx && !actx._chartInit) {
+    actx._chartInit = true;
+    new Chart(actx, {
+      type:'line',
+      data:{
+        labels:['Dec23','Feb24','Apr24','Jun24','Aug24','Oct24','Dec24','Feb25','Apr25','Jun25','Aug25','Oct25','Dec25','Feb26','Mar26'],
+        datasets:[{
+          data:[110,280,490,820,1100,1380,1680,1820,1940,2050,2120,2160,2190,2200,2200],
+          borderColor:'#3B82F6',borderWidth:2,
+          tension:0.4,pointRadius:0,pointHoverRadius:4,
+          pointHoverBackgroundColor:'#22D3EE',
+          fill:true,
+          backgroundColor:(ctx)=>{
+            const g=ctx.chart.ctx.createLinearGradient(0,0,0,100);
+            g.addColorStop(0,'rgba(59,130,246,0.18)');
+            g.addColorStop(1,'rgba(59,130,246,0)');
+            return g;
+          }
+        }]
+      },
+      options:{...chartOpts, animation:{duration:1200}}
+    });
+  }
+
+  // Revenue
+  const rctx = document.getElementById('revenueChart');
+  if(rctx && !rctx._chartInit) {
+    rctx._chartInit = true;
+    new Chart(rctx, {
+      type:'bar',
+      data:{
+        labels:['Янв','Фев','Мар','Сейчас'],
+        datasets:[{
+          data:[0, 0, 50, 50],
+          backgroundColor:(ctx)=>{
+            const i=ctx.dataIndex;
+            return i>=2 ? 'rgba(34,211,238,0.7)' : 'rgba(59,130,246,0.15)';
+          },
+          hoverBackgroundColor:'#22D3EE',
+          borderRadius:4,borderSkipped:false,
+        }]
+      },
+      options:{
+        ...chartOpts,
+        animation:{duration:1000},
+        scales:{
+          x:{display:false},
+          y:{display:false,beginAtZero:true}
+        }
+      }
+    });
+  }
+}
+
+// Init charts when Assets tab opens
+const _origSwitch = switchView;
+// patch switchView to init charts on tab 1
+(function(){
+  const orig = switchView;
+  window.switchView = function(n) {
+    orig(n);
+    if(n===1) setTimeout(initCharts, 150);
+  };
+})();
+
+async function handleLogout(){
+  try{await fetch('/api/auth',{method:'DELETE'})}catch(e){}
+  window.location.href='/login';
+}
+</script>
+</body>
+</html>

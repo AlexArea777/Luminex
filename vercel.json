@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "outputDirectory": "public",
+  "routes": [
+    { "src": "/api/auth", "dest": "/api/auth.js" },
+    { "src": "/api/bot",  "dest": "/api/bot.js"  },
+    { "src": "/login",    "dest": "/login.html"   },
+    { "src": "/dashboard","dest": "/dashboard.html"},
+    { "src": "/",         "dest": "/login.html"   }
+  ]
+}
